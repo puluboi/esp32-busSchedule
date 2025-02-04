@@ -13,7 +13,7 @@ void Stop::fetchBusData(const char* stopId) {
     // add headers to the htpp
     http.addHeader("Content-Type", "application/json");
     http.addHeader("digitransit-subscription-key",
-                   "**************");  // subscription key
+                   "183da02a389c4408a350927c329dccf3");  // subscription key
     int httpResponseCode = http.POST(query);  // make a POST request to the API
 
     if (httpResponseCode > 0) {  // check if successful
@@ -43,7 +43,7 @@ void Stop::displayBusData(bool departing) {
   JsonArray stoptimes =
       stop["stoptimesWithoutPatterns"];  // get the stoptimes from the payload
   // Filter out the ones with headsign "Otaniemi"
-  String headerstr = "111 Departing";
+  String headerstr = "Departing";
   if (departing) {  // if we're checking departing busses, the header should be
                     // correct
     for (int i = 0; i < stoptimes.size(); i++) {
@@ -53,7 +53,7 @@ void Stop::displayBusData(bool departing) {
       }
     }
   } else {
-    headerstr = "111 Arriving";
+    headerstr = "Arriving";
     for (int i = 0; i < stoptimes.size(); i++) {
       if (String((const char*)stoptimes[i]["headsign"]) ==
           "Matinkylä (M) via Tapiola (M)") {
@@ -67,12 +67,18 @@ void Stop::displayBusData(bool departing) {
     LCDA.DisplayString(0, 0, (unsigned char*)headerstr.c_str(),
                        headerstr.length());
     for (size_t i = 0; i < std::min(stoptimes.size(), (size_t)3); i++) {
-      int nextStopTimehr = ((int)stoptimes[i]["realtimeDeparture"] / 3600) %24;  // format the time, which in the payload is displayed in seconds since midnight.
+      int nextStopTimehr = ((int)stoptimes[i]["realtimeDeparture"] / 3600) %
+                           24;  // format the time, which in the payload is
+                                // displayed in seconds since midnight.
       int nextStopTimemin = (int)stoptimes[i]["realtimeArrival"] % 3600 / 60;
-      String minStr = nextStopTimemin < 10 ? "0" + String(nextStopTimemin) : String(nextStopTimemin); // If minutes under 10, add a zero to the front
-      String realtime = stoptimes[i]["realtimeState"];
-      String timeString = realtime + ": " + String(nextStopTimehr) + ":" +
-                          minStr;
+      String minStr = nextStopTimemin < 10
+                          ? "0" + String(nextStopTimemin)
+                          : String(nextStopTimemin);  // If minutes under 10,
+                                                      // add a zero to the front
+      String realtime = stoptimes[i]["realtime"] ? "" : "~";
+      String headSign = stoptimes[i]["headsign"].as<String>().substring(0, 3);
+      String timeString = headSign + " " + realtime + " " +
+                          String(nextStopTimehr) + ":" + minStr;
       LCDA.DisplayString(i + 1, 0, (unsigned char*)timeString.c_str(),
                          timeString.length());
       Serial.println("updated succesfully");
@@ -81,4 +87,12 @@ void Stop::displayBusData(bool departing) {
   } else {
     Serial.println("No upcoming stops");
   }
+}
+bool Stop::isNight() {
+  DynamicJsonDocument doc(1024);
+  deserializeJson(doc, payload);
+  JsonObject stop = doc["data"]["stop"];
+  JsonArray stoptimes = stop["stoptimesWithoutPatterns"];
+  int nextStopTimehr = ((int)stoptimes[0]["realtimeDeparture"] / 3600);
+  return nextStopTimehr>=24;
 }

@@ -5,14 +5,19 @@
 #include <WiFi.h>
 #include <algorithm>
 
-const char* ssid = "*****";
-char password[] = "*********";
+
+//Width 93mm Height 70mm distance between the holes: 61mm and 84.3mm.2mm hole diameter
+//Screen 53.6mm x 78.8mm
+const char* ssid = "150cc"; 
+char password[] = "AHCPR9F97HUWJ"; //"AHCPR9F97HUWJ" for password to 150cc
 const char* stopId = "HSL:2222209";
+const char* stopId2 = "HSL:2222208";
 bool depart = true;
 // put function declarations here:
 unsigned char str[] = "Hello, world!";
 
 Stop stop;
+Stop stop2; // The second stop that has busses only if nighttime.
 void setup()
 {
   LCDA.initDriverPin(SCK,D3,MOSI); 
@@ -45,9 +50,15 @@ void loop() {
       depart = true;
     }
     LCDA.CLEAR();
+    if(depart && stop.isNight()){ // only display busdata from stop2 when night and departing...
+      stop2.displayBusData(depart);
+    }
     stop.displayBusData(depart);
   }
   stop.fetchBusData(stopId);
+  if(stop.isNight()){
+    stop2.fetchBusData(stopId2);
+  }
   
 }
 

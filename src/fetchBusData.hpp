@@ -7,6 +7,8 @@ class Stop{
 public:
 void fetchBusData(const char* stopId);
 void displayBusData( bool departing);
+bool isNight();
+
 private:
 void processBusData(const String& data);
 String payload;
